@@ -2,3 +2,13 @@
 .*~
 src/*~
 data
+charge.pdf
+charge/
+hist.root
+mask.pdf
+mask/
+obj/
+pmtCameraHist_test.pdf
+runana
+time.pdf
+time/

@@ -16,6 +16,17 @@ from tables import open_file
 import sys
 import time
 
+def map_to_csv( h5filein, mapcsvout):
+    h5file = open_file(h5filein, "a")
+    #
+    the_h5_table=h5file.root.configuration.instrument.telescope.camera.geometry_0
+    the_map=the_h5_table[:]
+    #
+    df_the_map = pd.DataFrame(the_map, columns=['pix_id','pix_x','pix_y','pix_area'])
+    df_the_map.to_csv(mapcsvout,sep=" ")
+    #
+    h5file.close()
+
 def images_to_csv(h5filein, csvout):
     h5file = open_file(h5filein, "a")
     #
@@ -61,5 +72,17 @@ if __name__ == "__main__":
         tic = time.time()
         #test(datafilein)
         images_to_csv(h5filein, csvout)
+        toc = time.time()
+        print('{:.2f} s'.format(toc - tic))
+    elif (len(sys.argv)==2):
+        h5filein = str(sys.argv[1])
+        mapcsvout = str(h5filein + ".map")
+        #
+        print("h5filein  = ", h5filein)
+        print("mapcsvout = ", mapcsvout)
+        #
+        tic = time.time()
+        #test(datafilein)
+        map_to_csv(h5filein, mapcsvout)
         toc = time.time()
         print('{:.2f} s'.format(toc - tic))
