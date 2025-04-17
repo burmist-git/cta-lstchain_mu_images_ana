@@ -17,3 +17,5 @@ out_pdf/
 charge_true/
 ctapipe-merge.provenance.log
 ctapipe-process.provenance.log
+.ipynb_checkpoints
+processor_tool_muon_configuration_old.yaml
