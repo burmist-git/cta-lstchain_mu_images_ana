@@ -12,3 +12,8 @@ pmtCameraHist_test.pdf
 runana
 time.pdf
 time/
+hh
+out_pdf/
+charge_true/
+ctapipe-merge.provenance.log
+ctapipe-process.provenance.log

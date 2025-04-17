@@ -9,6 +9,7 @@ function printHelp {
     echo " [0] --r0_to_dl1         : r0_to_dl1"
     echo " [0] --dl1_muon_analysis : dl1_muon_analysis"
     echo " [0] --images_to_csv     : images_to_csv"
+    echo " [0] --ctapipe_r0_to_dl1 : ctapipe_r0_to_dl1"
 }
 
 if [ $# -eq 0 ]; then    
@@ -36,12 +37,36 @@ else
 	#    python /home/burmist/home2/work/CTA/cta-lstchain/lstchain/scripts/lstchain_dl1_muon_analysis.py --input-file $h5fileIn --output-file $fitsfileOut
 	#done
     elif [ "$1" = "--images_to_csv" ]; then
-	echo "--images_to_csv"
+	i=0
+	python images_to_csv_ctapipe.py ./data/run_00$i/dl1_muon_ctapipe_run00$i.h5 ./data/run_00$i/dl1_muon_ctapipe_run00$i.csv
 	#for i in $(seq 0 9); do
-	#    python images_to_csv.py run_00$i/dl1_muon_run00$i.h5 run_00$i/dl1_muon_run00$i.csv
+	#    #python images_to_csv.py run_00$i/dl1_muon_run00$i.h5 run_00$i/dl1_muon_run00$i.csv
+	#    python images_to_csv_ctapipe.py ./data/run_00$i/dl1_muon_run00$i.h5 run_00$i/dl1_muon_ctapipe_run00$i.h5
 	#done
     elif [ "$1" = "--map" ]; then
-	python images_to_csv.py ./data/run_000/dl1_muon_run000.h5 
+	#python images_to_csv.py ./data/run_000/dl1_muon_run000.h5
+	python images_to_csv_ctapipe.py ./data/run_000/dl1_muon_ctapipe_run000.h5
+    elif [ "$1" = "--ctapipe_r0_to_dl1" ]; then
+	echo "--ctapipe_r0_to_dl1"
+	i=0
+	in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
+	out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_00$i/dl1_muon_ctapipe_run00$i.h5
+	config_file=./processor_tool_muon_configuration.yaml
+	#
+	echo "in_simtel_file     $in_simtel_file"
+	echo "out_r0_dl1_h5_file $out_r0_dl1_h5_file"
+	echo "config_file        $config_file"
+	#
+	#
+	time ctapipe-process --max-events=10 --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
+	#
+	#for i in $(seq 0 9); do
+	#in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
+	#out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_00$i/dl1_muon_ctapipe_run00$i.h5
+	#config_file=./processor_tool_muon_configuration.yaml
+	#ctapipe-process --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
+	#done
+	#
     elif [ "$1" = "-c" ]; then
 	make clean; make -j	
     elif [ "$1" = "-h" ]; then

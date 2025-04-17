@@ -25,7 +25,7 @@ class pmtCameraHist: public TH2Poly {
 public:
   
   pmtCameraHist(const char* name, const char* title, pmtCameraHist *pmtHist);
-  pmtCameraHist(const char* name, const char* title, const char* mapping_csv_file, Double_t rot_alpha_deg);
+  pmtCameraHist(const char* name, const char* title, const char* mapping_csv_file, Double_t rot_alpha_deg = 0.0);
   //pmtCameraHist(const char* name, const char* title, const char* mapping_csv_file, Double_t rot_alpha_deg, TH1D *h1_distance_between_pixels);
   ~pmtCameraHist();
   void dump_mapping_info();
