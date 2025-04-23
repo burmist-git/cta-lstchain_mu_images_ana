@@ -19,3 +19,9 @@ ctapipe-merge.provenance.log
 ctapipe-process.provenance.log
 .ipynb_checkpoints
 processor_tool_muon_configuration_old.yaml
+fov_lon_fov_lat_img_mask.pdf
+fov_lon_fov_lat_img_mask/
+hhhh
+hist_fov_lon_fov_lat.root.pdf
+hist_pmtCameraHist_test.root
+test_out.pdf
