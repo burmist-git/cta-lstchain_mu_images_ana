@@ -48,16 +48,27 @@ pmtCameraHist::pmtCameraHist(const char* name, const char* title, pmtCameraHist 
   _name = name;
   _title = title;
   //
+  set_lon_lat_key(pmtHist->_lon_lat_key);
+  //
   for(unsigned int i = 0;i<pmtHist->get_pixel_vec().size();i++)
     AddBin(pmtHist->get_pixel_vec().at(0).n,
 	   pmtHist->get_pixel_vec().at(i).xp,
 	   pmtHist->get_pixel_vec().at(i).yp);
 }
 
-pmtCameraHist::pmtCameraHist(const char* name, const char* title, const char* mapping_csv_file, Double_t rot_alpha_deg) : TH2Poly(), _rot_alpha_deg(rot_alpha_deg)
+pmtCameraHist::pmtCameraHist(const char* name,
+			     const char* title,
+			     const char* mapping_csv_file,
+			     Double_t rot_alpha_deg,
+			     bool lon_lat_key) : TH2Poly(),
+						 _rot_alpha_deg(rot_alpha_deg),
+						 _lon_lat_key(lon_lat_key)
 {
   //
-  load_mapping( mapping_csv_file);
+  if(!_lon_lat_key)
+    load_mapping( mapping_csv_file);
+  else
+    load_mapping_log_lat( mapping_csv_file);
   //
   SetName(name);
   SetTitle(title);
@@ -72,6 +83,55 @@ pmtCameraHist::pmtCameraHist(const char* name, const char* title, const char* ma
 pmtCameraHist::~pmtCameraHist(){
 }
 
+void pmtCameraHist::load_mapping_log_lat(const char* mapping_csv_file){
+  //
+  ifstream fFile(mapping_csv_file);
+  //cout<<mapping_csv_file<<std::endl;
+  //
+  Float_t pix_lon, pix_lat;
+  Int_t pixel_id = 0;
+  Int_t entry_id = 0;
+  string mot;
+  //
+  Float_t pix_area = 0.002079326892271638;
+  if(fFile.is_open()){
+    //fFile>>mot>>mot>>mot>>mot;
+    //cout<<"mot "<<mot<<endl;
+    while(fFile>>pix_lon>>pix_lat){
+      pixel_info pix_i;      
+      //
+      pix_i.entry_id = entry_id;
+      pix_i.pixel_id = pixel_id;
+      pix_i.pix_x = pix_lon;
+      pix_i.pix_y = pix_lat;
+      pix_i.pix_area = pix_area;
+      pix_i.rotatePix(_rot_alpha_deg);
+      pix_i.pixel_rot_alpha_deg = 0.0;
+      //
+      TVector2 vv(pix_i.pix_x,pix_i.pix_y);
+      pix_i.pix_phi = vv.Phi();
+      pix_i.pix_r = vv.Mod();
+      //
+      pixel_id++;
+      entry_id++;
+      _pixel_vec.push_back(pix_i);
+    }
+    fFile.close();
+  }
+  //
+  _pixel_size = pixel_info::get_pixel_size_from_pix_area(pix_area);
+  _pixel_pitch = pixel_info::get_pixel_pitch(_pixel_vec);
+  _pixel_size = pixel_info::get_deg_from_dist_in_m(_pixel_size);
+  _pixel_pitch = pixel_info::get_deg_from_dist_in_m(_pixel_pitch);
+  Float_t pixel_rot_alpha_deg = pixel_info::get_pixel_pixel_rotation_angle_deg(_pixel_vec);
+  //Float_t pixel_rot_alpha_deg = 0.0;
+  for(unsigned int j = 0;j<_pixel_vec.size();j++){
+    _pixel_vec.at(j).pixel_rot_alpha_deg = pixel_rot_alpha_deg;
+    _pixel_vec.at(j).build_Cell(0, _pixel_size);
+  }
+  //
+}
+
 void pmtCameraHist::load_mapping(const char* mapping_csv_file){
   //
   ifstream fFile(mapping_csv_file);
@@ -82,13 +142,20 @@ void pmtCameraHist::load_mapping(const char* mapping_csv_file){
   Int_t entry_id = 0;
   string mot;
   //
+  TVector3 v_tmp;
+  //
   if(fFile.is_open()){
     fFile>>mot>>mot>>mot>>mot;
     while(fFile>>entry_id>>pixel_id>>pix_x>>pix_y>>pix_area){
       pixel_info pix_i;      
+      v_tmp.SetXYZ(pix_x,pix_y,0.0);
+      v_tmp.RotateY(TMath::Pi());
+      v_tmp.RotateZ(-TMath::Pi()/2.0);
       //
-      pix_x = pix_x;
-      pix_y = pix_y;      
+      pix_x = v_tmp.X();
+      pix_y = v_tmp.Y();      
+      //pix_x = pix_x;
+      //pix_y = pix_y;      
       //
       pix_i.entry_id = entry_id;
       pix_i.pixel_id = pixel_id;
@@ -137,6 +204,10 @@ TCanvas *pmtCameraHist::Draw_cam( TString settings, TString pdf_out_file){
   //Double_t lx_camera = 0.5;
   //Double_t ly_camera = 0.5;
   Double_t d_frame = 0.1;
+  if(_lon_lat_key){
+    lx_camera = 5.0;
+    ly_camera = 5.0;
+  }
   //
   //gStyle->SetPalette(kRainBow);
   //gStyle->SetPalette(kCool);
@@ -168,8 +239,14 @@ TCanvas *pmtCameraHist::Draw_cam( TString settings, TString pdf_out_file){
   //
   TH2F *frame = new TH2F( "h2", "h2", 40, -lx_camera/2.0-d_frame,lx_camera/2.0+d_frame,40, -ly_camera/2.0-d_frame,ly_camera/2.0+d_frame);
   frame->SetTitle("");
-  frame->GetXaxis()->SetTitle("x, m");
-  frame->GetYaxis()->SetTitle("y, m");
+  if(!_lon_lat_key){
+    frame->GetXaxis()->SetTitle("x, m");
+    frame->GetYaxis()->SetTitle("y, m");
+  }
+  else{
+    frame->GetXaxis()->SetTitle("lon, deg");
+    frame->GetYaxis()->SetTitle("lat, deg");
+  }
   frame->GetXaxis()->CenterTitle();
   frame->GetYaxis()->CenterTitle();
   frame->GetYaxis()->SetTitleOffset(1.5);
@@ -189,8 +266,10 @@ TCanvas *pmtCameraHist::Draw_cam( TString settings, TString pdf_out_file){
 }
 
 void pmtCameraHist::test(TString pdf_out_name){
+  Clear();
   for(Int_t i = 0;i<GetNcells();i++)
     SetBinContent(i,i);
+  Draw_cam("ZCOLOR",pdf_out_name.Data());
   //
   //TRandom3 *rnd = new TRandom3(123123);
   //for(Int_t i = 0;i<GetNcells();i++)
@@ -203,8 +282,27 @@ void pmtCameraHist::test(TString pdf_out_name){
   //SetBinContent(3,3);
   //SetMarkerSize(0.1);
   //SetLineWidth(0.01);
-  Draw_cam("ZCOLOR",pdf_out_name.Data());
   //
+}
+
+void pmtCameraHist::test_out_root(TString root_out_name){
+  Clear();
+  Clean();
+  for(Int_t i = 0;i<GetNcells();i++)
+    SetBinContent(i,i);
+  //
+  TFile* rootFile = new TFile(root_out_name.Data(), "RECREATE", " Histograms", 1);
+  rootFile->cd();
+  if (rootFile->IsZombie()){
+    cout<<"  ERROR ---> file "<<root_out_name.Data()<<" is zombi"<<endl;
+    assert(0);
+  }
+  else
+    cout<<"  Output Histos file ---> "<<root_out_name.Data()<<endl;
+  //
+  Draw_cam("ZCOLOR")->Write();
+  //
+  rootFile->Close();
 }
 
 void pmtCameraHist::Fill_hist(const vector<Float_t>& cam_image){

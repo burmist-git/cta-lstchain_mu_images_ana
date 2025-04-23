@@ -3,6 +3,7 @@
 #include "pmtCameraHist.hh"
 #include "dl1_muon_csv_reader.hh"
 #include "dl1_muon_ctapipe_csv_reader.hh"
+#include "fov_lon_fov_lat_img_mask_reader.hh"
 
 //root
 #include "TROOT.h"
@@ -62,6 +63,15 @@ plt::plt(dl1_muon_ctapipe_csv_reader* reader, TString pmt_map) : _reader_ctapipe
   _pmt_cam_time = new pmtCameraHist("pmt_cam_time","pmt_cam_time",_pmt_cam);
   _pmt_cam_mask = new pmtCameraHist("pmt_cam_mask","pmt_cam_mask",_pmt_cam);
   _pmt_cam_charge_true = new pmtCameraHist("pmt_cam_charge_true","pmt_cam_charge_true",_pmt_cam);
+}
+
+plt::plt(fov_lon_fov_lat_img_mask_reader* reader, TString pmt_map) : _reader_fov_lon_fov_lat(reader), _pmt_map(pmt_map)
+{
+  _pmt_cam = new pmtCameraHist("pmt_cam","pmt_cam",_pmt_map,0.0,true);
+  _pmt_cam_charge = new pmtCameraHist("pmt_cam_charge","pmt_cam_charge",_pmt_cam);
+  _pmt_cam_time = NULL;
+  _pmt_cam_mask = new pmtCameraHist("pmt_cam_mask","pmt_cam_mask",_pmt_cam);
+  _pmt_cam_charge_true = NULL;
 }
 
 plt::~plt(){;}
@@ -166,6 +176,131 @@ void plt::plot_and_save_ctapipe(TString hist_root_out){
   rootFile->Close();
 }
 
+TCanvas* plt::plot_muon_lon_lat(unsigned int evID, TString pdf_out_file){
+  //
+  _pmt_cam_charge->Clean();
+  _pmt_cam_mask->Clean();
+  //
+  _pmt_cam_charge->Fill_hist(_reader_fov_lon_fov_lat->get_img_v());
+  _pmt_cam_mask->Fill_hist(_reader_fov_lon_fov_lat->get_mask_v());
+  //
+  TGraph *gr_ring_reco = new TGraph();
+  TGraph *gr_ring_r0 = new TGraph();
+  TGraph *gr_lon_lat_greed = new TGraph();
+  TGraph *gr_lon_lat_greed_mask = new TGraph();
+  gr_lon_lat_greed->SetPoint(0,0,0);
+  gr_lon_lat_greed_mask->SetPoint(0,0,0);
+  //
+  //  
+  //
+  Int_t mask_counter = 0;
+  for(unsigned int jj = 0; jj<_reader_fov_lon_fov_lat->get_fov_lon_v().size(); jj++){
+    gr_lon_lat_greed->SetPoint((Int_t)jj,
+    			       _reader_fov_lon_fov_lat->get_fov_lon_v().at(jj),
+    			       _reader_fov_lon_fov_lat->get_fov_lat_v().at(jj));
+    if(_reader_fov_lon_fov_lat->get_mask_v().at(jj)>0.0){
+      gr_lon_lat_greed_mask->SetPoint(mask_counter,
+    				      _reader_fov_lon_fov_lat->get_fov_lon_v().at(jj),
+    				      _reader_fov_lon_fov_lat->get_fov_lat_v().at(jj));
+      mask_counter++;
+    }
+  }
+  //
+  //
+  //
+  //  
+  gen_ring(gr_ring_reco, 100,
+	   _reader_fov_lon_fov_lat->get_center_fov_lon_fit(),
+	   _reader_fov_lon_fov_lat->get_center_fov_lat_fit(),
+	   _reader_fov_lon_fov_lat->get_radius_fit());
+  gr_ring_reco->SetLineColor(kGreen+2);
+  gr_ring_reco->SetLineWidth(2);
+  gr_ring_r0->SetPoint( 0, _reader_fov_lon_fov_lat->get_center_fov_lon_fit(), _reader_fov_lon_fov_lat->get_center_fov_lat_fit());
+  gr_ring_r0->SetMarkerColor(kGreen+2);
+  gr_ring_r0->SetMarkerStyle(43);
+  gr_ring_r0->SetMarkerSize(2.0);
+  //
+  //
+  //
+  Double_t lx_camera = 5.0;
+  Double_t ly_camera = 5.0;
+  Double_t d_frame = 0.1;
+  //gStyle->SetPalette(kRainBow);
+  //gStyle->SetPalette(kCool);
+  //gStyle->SetPalette(kIsland);
+  //gStyle->SetPalette(kCherry);
+  //TColor::InvertPalette();
+  gStyle->SetPalette(kInvertedDarkBodyRadiator);
+  gStyle->SetOptStat(kFALSE);
+  TH2F *frame_Charge = new TH2F( "h2_Charge", "h2_Charge", 40, -lx_camera/2.0-d_frame,lx_camera/2.0+d_frame,40, -ly_camera/2.0-d_frame,ly_camera/2.0+d_frame);
+  frame_Charge->SetTitle("Charge");
+  frame_Charge->GetXaxis()->SetTitle("x, m");
+  frame_Charge->GetYaxis()->SetTitle("y, m");
+  frame_Charge->GetXaxis()->CenterTitle();
+  frame_Charge->GetYaxis()->CenterTitle();
+  frame_Charge->GetYaxis()->SetTitleOffset(1.5);
+  frame_Charge->SetStats(kFALSE);
+  TH2F *frame_Mask = new TH2F( "h2_Mask", "h2_Mask", 40, -lx_camera/2.0-d_frame,lx_camera/2.0+d_frame,40, -ly_camera/2.0-d_frame,ly_camera/2.0+d_frame);
+  frame_Mask->SetTitle("Mask");
+  frame_Mask->GetXaxis()->SetTitle("x, m");
+  frame_Mask->GetYaxis()->SetTitle("y, m");
+  frame_Mask->GetXaxis()->CenterTitle();
+  frame_Mask->GetYaxis()->CenterTitle();
+  frame_Mask->GetYaxis()->SetTitleOffset(1.5);
+  //
+  //
+  _pmt_cam_charge->SetMinimum(0.0);
+  _pmt_cam_charge->SetMaximum(10.0);
+  _pmt_cam_mask->SetMinimum(0.0);
+  _pmt_cam_mask->SetMaximum(2.0);
+  //
+  //
+  TCanvas *c1 = new TCanvas("c1","c1",1000,1000);
+  c1->Divide(2,2);
+  //
+  c1->cd(1);
+  gPad->SetRightMargin(0.12);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetTopMargin(0.1);
+  gPad->SetBottomMargin(0.15);
+  frame_Charge->Draw();
+  _pmt_cam_charge->Draw("ZCOLOR same");
+  gr_ring_reco->Draw("same");
+  gr_ring_r0->Draw("sameP");
+  //
+  c1->cd(2);
+  gPad->SetRightMargin(0.12);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetTopMargin(0.1);
+  gPad->SetBottomMargin(0.15);
+  frame_Mask->Draw();
+  _pmt_cam_mask->Draw("ZCOLOR same");
+  gr_ring_reco->Draw("same");
+  gr_ring_r0->Draw("sameP");
+  //
+  c1->cd(3);
+  gr_lon_lat_greed->Draw("AP");
+  gr_ring_reco->Draw("same");
+  gr_ring_r0->Draw("sameP");
+  c1->cd(4);
+  gr_lon_lat_greed_mask->Draw("AP");
+  gr_ring_reco->Draw("same");
+  gr_ring_r0->Draw("sameP");
+  
+  if(pdf_out_file != "")
+    c1->SaveAs(pdf_out_file.Data());
+
+  delete _pmt_cam_charge;
+  delete _pmt_cam_mask;
+  delete frame_Charge;
+  delete frame_Mask;
+  delete gr_ring_reco;
+  delete gr_ring_r0;
+  delete gr_lon_lat_greed;
+  delete gr_lon_lat_greed_mask;
+  delete c1;
+}
+
 TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   //
   _pmt_cam_charge->Clean();
@@ -179,14 +314,35 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   _pmt_cam_charge_true->Fill_hist(_reader_ctapipe->get_ch_true().at(evID));  
   //
   //
-  //  
+  //
+  //
+  //
+  //inline const vector<Float_t>& get_muonring_center_fov_lon_v() const {return _muonring_center_fov_lon_v;};
+  //inline const vector<Float_t>& get_muonring_center_fov_lat_v() const {return _muonring_center_fov_lat_v;};
+  //inline const vector<Float_t>& get_muonring_radius_v() const {return _muonring_radius_v;};
+  //inline const vector<Float_t>& get_muonring_center_phi_v() const {return _muonring_center_phi_v;};
+  //inline const vector<Float_t>& get_muonring_center_distance_v() const {return _muonring_center_distance_v;};
+  //
+  //
+  //
+  //
+  //
   Double_t effective_focal_length_m = 29.30565071105957;
   TVector2 v2;
+  TVector2 v2_fov_lon_lat;
+  TVector3 v3_tmp;
   TGraph *gr_ring_reco = new TGraph();
   TGraph *gr_ring_r0 = new TGraph();
+  //Double_t muonring_radius = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_radius_v().at(evID),effective_focal_length_m);
+  //Double_t muonring_center_phi = _reader_ctapipe->get_muonring_center_phi_v().at(evID);
+  //Double_t muonring_center_distance = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID),effective_focal_length_m);
   Double_t muonring_radius = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_radius_v().at(evID),effective_focal_length_m);
-  Double_t muonring_center_phi = _reader_ctapipe->get_muonring_center_phi_v().at(evID);
-  Double_t muonring_center_distance = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID),effective_focal_length_m);
+  v2_fov_lon_lat.SetX(get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_fov_lon_v().at(evID),effective_focal_length_m));
+  v2_fov_lon_lat.SetY(get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_fov_lat_v().at(evID),effective_focal_length_m));
+  //Double_t muonring_center_phi = _reader_ctapipe->get_muonring_center_phi_v().at(evID);
+  //Double_t muonring_center_distance = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID),effective_focal_length_m);
+  Double_t muonring_center_phi = v2_fov_lon_lat.Phi();
+  Double_t muonring_center_distance = v2_fov_lon_lat.Mod();
   //
   //
   Int_t image_obs_id = _reader_ctapipe->get_image_obs_id_v().at(evID);
@@ -201,10 +357,15 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   //  
   //if(muonring_radius>0.0){
   v2.SetMagPhi(muonring_center_distance,get_canonical_phi_deg_from_phi_deg(muonring_center_phi));
-  gen_ring(gr_ring_reco, 100, v2.X(), v2.Y(), muonring_radius);
+  v3_tmp.SetXYZ(v2.X(), v2.Y(),0.0);
+  v3_tmp.RotateY(TMath::Pi());
+  v3_tmp.RotateZ(-TMath::Pi()/2.0);
+  gen_ring(gr_ring_reco, 100, v3_tmp.X(), v3_tmp.Y(), muonring_radius);
+  //gen_ring(gr_ring_reco, 100, -v2.Y(), -v2.X(), muonring_radius);
   gr_ring_reco->SetLineColor(kGreen+2);
   gr_ring_reco->SetLineWidth(2);
-  gr_ring_r0->SetPoint( 0, v2.X(), v2.Y());
+  gr_ring_r0->SetPoint( 0, v3_tmp.X(), v3_tmp.Y());
+  //gr_ring_r0->SetPoint( 0, -v2.Y(), -v2.X());
   gr_ring_r0->SetMarkerColor(kGreen+2);
   gr_ring_r0->SetMarkerStyle(43);
   gr_ring_r0->SetMarkerSize(2.0);

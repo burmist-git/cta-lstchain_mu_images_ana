@@ -10,6 +10,8 @@ function printHelp {
     echo " [0] --dl1_muon_analysis : dl1_muon_analysis"
     echo " [0] --images_to_csv     : images_to_csv"
     echo " [0] --ctapipe_r0_to_dl1 : ctapipe_r0_to_dl1"
+    echo " [0] --dl1_csv           : dl1_csv root"
+    echo " [0] --fov_lon_fov_lat   : fov_lon_fov_lat"
 }
 
 if [ $# -eq 0 ]; then    
@@ -58,7 +60,8 @@ else
 	echo "config_file        $config_file"
 	#
 	#
-	time ctapipe-process --max-events=10 --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
+	#
+	time ctapipe-process --max-events=100 --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
 	#
 	#for i in $(seq 0 9); do
 	#in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
@@ -69,6 +72,14 @@ else
 	#
     elif [ "$1" = "-c" ]; then
 	make clean; make -j	
+    elif [ "$1" = "--dl1_csv" ]; then
+	make clean; make -j
+	./runana 3 ./data/run_000/dl1_muon_ctapipe_run000.csv ./data/run_000/dl1_muon_ctapipe_run000.h5.map hist.root ; source compressPdf.sh -m eee
+    elif [ "$1" = "--fov_lon_fov_lat" ]; then
+	make clean; make -j
+	csvfiles=$(ls -lrt fov_lon_fov_lat_img_mask/fov_lon_fov_lat_img_mask*.csv | awk {'print $9'} | xargs)
+	./runana 4 ./data/run_000/dl1_muon_ctapipe_run000.h5.lon.lat.map \
+		 hist_fov_lon_fov_lat.root $csvfiles		 
     elif [ "$1" = "-h" ]; then
         printHelp
     else

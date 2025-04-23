@@ -91,6 +91,12 @@ struct pixel_info {
     std::cout<<"v.Phi() "<<v.Phi()*180.0/TMath::Pi()<<std::endl;
     return v.Phi()*180.0/TMath::Pi();
   }
+  static Float_t get_dist_in_m_from_deg(Float_t val_in_deg, Float_t effective_focal_length_m = 29.30565071105957){
+    return effective_focal_length_m*TMath::Tan(val_in_deg*TMath::Pi()/180.0);
+  }
+  static Float_t get_deg_from_dist_in_m(Float_t val_in_m, Float_t effective_focal_length_m = 29.30565071105957){
+    return  TMath::ATan(val_in_m/effective_focal_length_m)*180.0/TMath::Pi();
+  }
   void rotatePix(Double_t rot_alpha_deg){
     if(rot_alpha_deg != 0.0){
       TVector2 v(pix_x,pix_y);
