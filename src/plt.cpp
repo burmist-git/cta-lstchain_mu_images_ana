@@ -301,6 +301,21 @@ TCanvas* plt::plot_muon_lon_lat(unsigned int evID, TString pdf_out_file){
   delete c1;
 }
 
+void plt::test_center_phi_distance(unsigned int evID){
+
+  Double_t muonring_radius =  (Double_t)_reader_ctapipe->get_muonring_radius_v().at(evID);
+  Double_t muonring_center_phi = (Double_t)_reader_ctapipe->get_muonring_center_phi_v().at(evID);
+  Double_t muonring_center_distance = (Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID);
+
+  Double_t muonring_center_lon = (Double_t)_reader_ctapipe->get_muonring_center_fov_lon_v().at(evID);
+  Double_t muonring_center_lat = (Double_t)_reader_ctapipe->get_muonring_center_fov_lat_v().at(evID);
+
+
+  Double_t delat_dist = muonring_center_distance - TMath::Sqrt(muonring_center_lon*muonring_center_lon + muonring_center_lat*muonring_center_lat);
+  
+  cout<<"evID "<<evID<<" delat_dist: "<<delat_dist<<" "<<muonring_center_distance<<" "<<muonring_center_lon<<" "<<muonring_center_lat<<endl;  
+}
+
 TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   //
   _pmt_cam_charge->Clean();
@@ -312,6 +327,8 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   _pmt_cam_time->Fill_hist(_reader_ctapipe->get_cht().at(evID));
   _pmt_cam_mask->Fill_hist(_reader_ctapipe->get_chm().at(evID));
   _pmt_cam_charge_true->Fill_hist(_reader_ctapipe->get_ch_true().at(evID));  
+  //
+  test_center_phi_distance(evID);
   //
   //
   //
@@ -339,6 +356,12 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   Double_t muonring_radius = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_radius_v().at(evID),effective_focal_length_m);
   v2_fov_lon_lat.SetX(get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_fov_lon_v().at(evID),effective_focal_length_m));
   v2_fov_lon_lat.SetY(get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_fov_lat_v().at(evID),effective_focal_length_m));
+
+  cout<<"evID "<<evID<<endl
+      <<"radius "<<_reader_ctapipe->get_muonring_radius_v().at(evID)<<endl
+      <<"c_lon  "<<_reader_ctapipe->get_muonring_center_fov_lon_v().at(evID)<<endl
+      <<"c_lat  "<<_reader_ctapipe->get_muonring_center_fov_lat_v().at(evID)<<endl;
+  
   //Double_t muonring_center_phi = _reader_ctapipe->get_muonring_center_phi_v().at(evID);
   //Double_t muonring_center_distance = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID),effective_focal_length_m);
   Double_t muonring_center_phi = v2_fov_lon_lat.Phi();
@@ -360,12 +383,14 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   v3_tmp.SetXYZ(v2.X(), v2.Y(),0.0);
   v3_tmp.RotateY(TMath::Pi());
   v3_tmp.RotateZ(-TMath::Pi()/2.0);
-  gen_ring(gr_ring_reco, 100, v3_tmp.X(), v3_tmp.Y(), muonring_radius);
+  //gen_ring(gr_ring_reco, 100, v3_tmp.X(), v3_tmp.Y(), muonring_radius);
   //gen_ring(gr_ring_reco, 100, -v2.Y(), -v2.X(), muonring_radius);
+  gen_ring(gr_ring_reco, 100, v2_fov_lon_lat.X(), v2_fov_lon_lat.Y(), muonring_radius);
   gr_ring_reco->SetLineColor(kGreen+2);
   gr_ring_reco->SetLineWidth(2);
-  gr_ring_r0->SetPoint( 0, v3_tmp.X(), v3_tmp.Y());
+  //gr_ring_r0->SetPoint( 0, v3_tmp.X(), v3_tmp.Y());
   //gr_ring_r0->SetPoint( 0, -v2.Y(), -v2.X());
+  gr_ring_r0->SetPoint( 0, v2_fov_lon_lat.X(), v2_fov_lon_lat.Y());
   gr_ring_r0->SetMarkerColor(kGreen+2);
   gr_ring_r0->SetMarkerStyle(43);
   gr_ring_r0->SetMarkerSize(2.0);

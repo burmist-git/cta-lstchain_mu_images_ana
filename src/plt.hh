@@ -37,6 +37,8 @@ public:
   static Double_t get_canonical_phi_deg_from_phi_deg(Double_t phi_deg);
   
   void fill_histos(TString hist_root_out);
+
+  void test_center_phi_distance(unsigned int evID);
   
 private:
 
