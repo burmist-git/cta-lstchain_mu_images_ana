@@ -50,6 +50,8 @@ pmtCameraHist::pmtCameraHist(const char* name, const char* title, pmtCameraHist 
   //
   set_lon_lat_key(pmtHist->_lon_lat_key);
   //
+  _motherHist = pmtHist;
+  //
   for(unsigned int i = 0;i<pmtHist->get_pixel_vec().size();i++)
     AddBin(pmtHist->get_pixel_vec().at(0).n,
 	   pmtHist->get_pixel_vec().at(i).xp,

@@ -45,6 +45,8 @@ public:
   inline void set_lon_lat_key(bool lon_lat_key) {_lon_lat_key = lon_lat_key;}
   
   //static void rotatePix(Double_t alpha, const Double_t xo, const Double_t yo, Double_t &xn, Double_t &yn);
+
+  pmtCameraHist* _motherHist;
   
 private:
 

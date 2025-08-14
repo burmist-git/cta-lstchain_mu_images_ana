@@ -12,6 +12,7 @@ function printHelp {
     echo " [0] --ctapipe_r0_to_dl1 : ctapipe_r0_to_dl1"
     echo " [0] --dl1_csv           : dl1_csv root"
     echo " [0] --fov_lon_fov_lat   : fov_lon_fov_lat"
+    echo " [0] --cp_conf_zero      : cp_conf_zero"
 }
 
 if [ $# -eq 0 ]; then    
@@ -50,25 +51,39 @@ else
 	python images_to_csv_ctapipe.py ./data/run_000/dl1_muon_ctapipe_run000.h5
     elif [ "$1" = "--ctapipe_r0_to_dl1" ]; then
 	echo "--ctapipe_r0_to_dl1"
-	i=0
-	in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
-	out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_00$i/dl1_muon_ctapipe_run00$i.h5
-	config_file=./processor_tool_muon_configuration.yaml
-	#
-	echo "in_simtel_file     $in_simtel_file"
-	echo "out_r0_dl1_h5_file $out_r0_dl1_h5_file"
-	echo "config_file        $config_file"
-	#
-	#
-	#
-	time ctapipe-process --max-events=100 --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
-	#
-	#for i in $(seq 0 9); do
+	#i=0
 	#in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
 	#out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_00$i/dl1_muon_ctapipe_run00$i.h5
 	#config_file=./processor_tool_muon_configuration.yaml
-	#ctapipe-process --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
-	#done
+	#
+	#echo "in_simtel_file     $in_simtel_file"
+	#echo "out_r0_dl1_h5_file $out_r0_dl1_h5_file"
+	#echo "config_file        $config_file"
+	#
+	#
+	#
+	#time ctapipe-process --max-events=100 --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file	
+	#time ctapipe-process --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
+	#
+	for i in $(seq 0 9); do
+	    out_job_file="ctapipe_muon_run00$i.job"
+	    in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run00$i.simtel.gz
+	    out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_00$i/dl1_muon_ctapipe_run00$i.h5
+	    rm -rf $out_r0_dl1_h5_file
+	    config_file=./processor_tool_muon_configuration_$i'conf.yaml'
+	    cmd="ctapipe-process --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file"
+	    echo "$cmd" > $out_job_file
+	    #
+	    chmod u+x $out_job_file
+	    jobID=`printf "%03d" $i`
+	    screenName='ctapipe'$jobID
+	    echo "$i $screenName"
+	    #echo "./sim_telarray_muon_run00$i.job"
+	    #
+	    screen -S $screenName -L -d -m ./$out_job_file
+	    #./$out_job_file
+	    sleep 1
+	done
 	#
     elif [ "$1" = "-c" ]; then
 	make clean; make -j	
@@ -80,7 +95,12 @@ else
 	csvfiles=$(ls -lrt fov_lon_fov_lat_img_mask/fov_lon_fov_lat_img_mask*.csv | awk {'print $9'} | xargs)
 	./runana 4 ./data/run_000/dl1_muon_ctapipe_run000.h5.lon.lat.map \
 		 hist_fov_lon_fov_lat.root $csvfiles		 
+    elif [ "$1" = "--cp_conf_zero" ]; then
+	for i in $(seq 1 9); do
+	    cp processor_tool_muon_configuration_0conf.yaml 'processor_tool_muon_configuration_'$i'conf.yaml'
+	done
     elif [ "$1" = "-h" ]; then
+	    
         printHelp
     else
         printHelp

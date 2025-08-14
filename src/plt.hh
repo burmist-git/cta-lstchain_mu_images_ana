@@ -13,9 +13,10 @@ class dl1_muon_csv_reader;
 class dl1_muon_ctapipe_csv_reader;
 class fov_lon_fov_lat_img_mask_reader;
 class pmtCameraHist;
-class TGraph;
 
+class TGraph;
 class TCanvas;
+class TH1D;
 
 using namespace std;
 
@@ -39,7 +40,9 @@ public:
   void fill_histos(TString hist_root_out);
 
   void test_center_phi_distance(unsigned int evID);
-  
+
+  void get_phi_dist_and_clean_ring(TH1D *h1_phi, pmtCameraHist *h_pmt_cam, Double_t x0, Double_t y0, Double_t ring_R, Double_t d_R_relative);
+
 private:
 
   dl1_muon_csv_reader* _reader;

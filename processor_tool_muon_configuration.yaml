@@ -11,11 +11,12 @@ MuonProcessor:
   pedestal: 1.1
 
 MuonIntensityFitter:
-  hole_radius_m: [["type", "LST_*", 0.308]]
+  hole_radius_m: [["type", "LST_*", 1.92]]
   spe_width: 0.5
   min_lambda_m: 0.0000003
   max_lambda_m: 0.0000006
   oversampling: 3
+  averaging: 3
 
 ImageParameterQuery:
   quality_criteria: [

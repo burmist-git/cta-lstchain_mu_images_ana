@@ -114,7 +114,7 @@ void plt::plot_and_save(TString hist_root_out){
     //pmt_cam->SetMinimum(10.0);
     //pmt_cam->SetMaximum(25.0);
     pmt_cam->SetMinimum(0.0);
-    pmt_cam->SetMaximum(10.0);
+    //pmt_cam->SetMaximum(10.0);
     pmt_cam->Fill_hist(_reader->get_ch().at(i));
     pmt_cam->Draw_cam("ZCOLOR",pdf_out)->Write();
   }
@@ -163,7 +163,7 @@ void plt::plot_and_save_ctapipe(TString hist_root_out){
     //pmt_cam->SetMinimum(10.0);
     //pmt_cam->SetMaximum(25.0);
     pmt_cam->SetMinimum(0.0);
-    pmt_cam->SetMaximum(10.0);
+    //pmt_cam->SetMaximum(10.0);
     //pmt_cam->Fill_hist(_reader_ctapipe->get_ch().at(i));
     //pmt_cam->Fill_hist(_reader_ctapipe->get_cht().at(i));
     //pmt_cam->Fill_hist(_reader_ctapipe->get_chm().at(i));
@@ -250,7 +250,7 @@ TCanvas* plt::plot_muon_lon_lat(unsigned int evID, TString pdf_out_file){
   //
   //
   _pmt_cam_charge->SetMinimum(0.0);
-  _pmt_cam_charge->SetMaximum(10.0);
+  //_pmt_cam_charge->SetMaximum(10.0);
   _pmt_cam_mask->SetMinimum(0.0);
   _pmt_cam_mask->SetMaximum(2.0);
   //
@@ -329,6 +329,7 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   _pmt_cam_charge_true->Fill_hist(_reader_ctapipe->get_ch_true().at(evID));  
   //
   test_center_phi_distance(evID);
+  
   //
   //
   //
@@ -361,6 +362,18 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
       <<"radius "<<_reader_ctapipe->get_muonring_radius_v().at(evID)<<endl
       <<"c_lon  "<<_reader_ctapipe->get_muonring_center_fov_lon_v().at(evID)<<endl
       <<"c_lat  "<<_reader_ctapipe->get_muonring_center_fov_lat_v().at(evID)<<endl;
+  //
+  //
+  //TH1D *h1_phi_deg = new TH1D("h1_phi_deg","h1_phi_deg",32,-12.0, 372.0);
+  //TH1D *h1_phi_deg_true = new TH1D("h1_phi_deg_true","h1_phi_deg_true",32,-12.0, 372.0);
+  TH1D *h1_phi_deg = new TH1D("h1_phi_deg","h1_phi_deg",17,-24.0, 384.0);
+  TH1D *h1_phi_deg_true = new TH1D("h1_phi_deg_true","h1_phi_deg_true",17,-24.0, 384.0);
+
+  Double_t d_R_relative = 0.1;
+  get_phi_dist_and_clean_ring(h1_phi_deg, _pmt_cam_charge, v2_fov_lon_lat.X(), v2_fov_lon_lat.Y(), muonring_radius, d_R_relative);
+  get_phi_dist_and_clean_ring(h1_phi_deg_true, _pmt_cam_charge_true, v2_fov_lon_lat.X(), v2_fov_lon_lat.Y(), muonring_radius, d_R_relative);
+  
+
   
   //Double_t muonring_center_phi = _reader_ctapipe->get_muonring_center_phi_v().at(evID);
   //Double_t muonring_center_distance = get_m_from_deg((Double_t)_reader_ctapipe->get_muonring_center_distance_v().at(evID),effective_focal_length_m);
@@ -399,13 +412,13 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   //
   //
   _pmt_cam_charge->SetMinimum(0.0);
-  _pmt_cam_charge->SetMaximum(10.0);
+  //_pmt_cam_charge->SetMaximum(10.0);
   _pmt_cam_time->SetMinimum(0.0);
   _pmt_cam_time->SetMaximum(40.0);
   _pmt_cam_mask->SetMinimum(0.0);
   _pmt_cam_mask->SetMaximum(2.0);
   _pmt_cam_charge_true->SetMinimum(0.0);
-  _pmt_cam_charge_true->SetMaximum(10.0);
+  //_pmt_cam_charge_true->SetMaximum(10.0);
   //
   //
   //
@@ -498,6 +511,14 @@ TCanvas* plt::plot_muon_all(unsigned int evID, TString pdf_out_file){
   _pmt_cam_charge_true->Draw("ZCOLOR same");
   gr_ring_reco->Draw("same");
   gr_ring_r0->Draw("sameP");
+  c1->cd(6);
+  gPad->SetRightMargin(0.12);
+  gPad->SetLeftMargin(0.12);
+  gPad->SetTopMargin(0.1);
+  gPad->SetBottomMargin(0.15);
+  h1_phi_deg_true->SetLineColor(kRed);
+  h1_phi_deg->Draw();
+  h1_phi_deg_true->Draw("same");
   //
   //gPad->SetGridx();
   //gPad->SetGridy();
@@ -634,4 +655,58 @@ Double_t plt::get_canonical_phi_deg_from_phi_deg(Double_t phi_deg){
     return phi_deg;
   }  
   return 360.0 + phi_deg;
+}
+
+void plt::get_phi_dist_and_clean_ring( TH1D *h1_phi, pmtCameraHist *h_pmt_cam, Double_t x0, Double_t y0, Double_t ring_R, Double_t d_R_relative){
+  Double_t charge;
+  cout<<"h_pmt_cam->get_pixel_vec().size()                   "<<h_pmt_cam->_motherHist->get_pixel_vec().size()<<endl
+      <<"h_pmt_cam->_motherHist->get_pixel_vec().at(1).pix_x "<<h_pmt_cam->_motherHist->get_pixel_vec().at(1).pix_x<<endl
+      <<"x0                                                  "<<x0<<endl;
+  //TH1D *h1_phi_tmp = new TH1D("h1_phi_tmp","h1_phi_tmp",32,-12.0, 372.0);
+  TH1D *h1_phi_tmp = new TH1D("h1_phi_tmp","h1_phi_tmp",17,-24.0, 384.0);
+  
+  for(unsigned int i = 0;i<h_pmt_cam->_motherHist->get_pixel_vec().size();i++){
+    charge = h_pmt_cam->GetBinContent(i+1);
+    if(charge>0){
+      if(TMath::Abs((TMath::Abs(x0) - 0.1))<0.1){
+	TVector2 v( h_pmt_cam->_motherHist->get_pixel_vec().at(i).pix_x - x0,
+		    h_pmt_cam->_motherHist->get_pixel_vec().at(i).pix_y - y0);
+	if(TMath::Abs(v.Mod()-ring_R)<ring_R*d_R_relative)
+	  h1_phi_tmp->Fill(v.Phi()*180.0/TMath::Pi(),charge);
+      }
+      else{
+	TVector2 v( h_pmt_cam->_motherHist->get_pixel_vec().at(i).pix_x - 0.0,
+		    h_pmt_cam->_motherHist->get_pixel_vec().at(i).pix_y - 0.0);
+	ring_R = 0.5;
+	if(TMath::Abs(v.Mod()-ring_R)<ring_R)
+	  h1_phi_tmp->Fill(v.Phi()*180.0/TMath::Pi(),charge);
+      }
+    }
+  }
+  //
+  for(Int_t i = 1;i<=h1_phi_tmp->GetNbinsX();i++){
+    h1_phi->SetBinContent(i,h1_phi_tmp->GetBinContent(i));
+  }
+  //
+  delete h1_phi_tmp;
+  
+  /*
+  Long64_t nentries = fChain->GetEntriesFast();
+  Long64_t nbytes = 0, nb = 0;
+  for (Long64_t jentry=0; jentry<nentries;jentry++) {
+    Long64_t ientry = LoadTree(jentry);
+    if (ientry < 0) break;
+    nb = fChain->GetEntry(jentry); nbytes += nb;
+    //if(jentry%1000 == 0)
+    //cout<<jentry<<endl;
+    //
+    for(Int_t i = 0;i<nPhot;i++){
+      TVector2 v( PosX[i] - cx_reco, PosY[i] - cy_reco);
+      if( (v.Mod()>r_reco - d_r_reco) && (v.Mod()<r_reco + d_r_reco) ){
+        h1_deg->Fill(v.Phi()*180.0/TMath::Pi());
+        h2_PosY_vs_PosX_clean->Fill(PosX[i],PosY[i]);
+      }
+    }
+  }
+*/
 }
