@@ -2,17 +2,18 @@
 
 function printHelp {
     echo " --> ERROR in input arguments "
-    echo " [0] -d                  : single root file"
-    echo " [0] -h                  : help"
-    echo " [0] -c                  : recompile"
-    echo " [0] --map               : get map"
-    echo " [0] --r0_to_dl1         : r0_to_dl1"
-    echo " [0] --dl1_muon_analysis : dl1_muon_analysis"
-    echo " [0] --images_to_csv     : images_to_csv"
-    echo " [0] --ctapipe_r0_to_dl1 : ctapipe_r0_to_dl1"
-    echo " [0] --dl1_csv           : dl1_csv root"
-    echo " [0] --fov_lon_fov_lat   : fov_lon_fov_lat"
-    echo " [0] --cp_conf_zero      : cp_conf_zero"
+    echo " [0] -d                      : single root file"
+    echo " [0] -h                      : help"
+    echo " [0] -c                      : recompile"
+    echo " [0] --map                   : get map"
+    echo " [0] --r0_to_dl1             : r0_to_dl1"
+    echo " [0] --dl1_muon_analysis     : dl1_muon_analysis"
+    echo " [0] --images_to_csv         : images_to_csv"
+    echo " [0] --ctapipe_r0_to_dl1     : ctapipe_r0_to_dl1"
+    echo " [0] --ctapipe_r0_to_dl1_dev : ctapipe_r0_to_dl1_dev"
+    echo " [0] --dl1_csv               : dl1_csv root"
+    echo " [0] --fov_lon_fov_lat       : fov_lon_fov_lat"
+    echo " [0] --cp_conf_zero          : cp_conf_zero"
 }
 
 if [ $# -eq 0 ]; then    
@@ -85,6 +86,15 @@ else
 	    sleep 1
 	done
 	#
+    elif [ "$1" = "--ctapipe_r0_to_dl1_dev" ]; then
+	echo "--ctapipe_r0_to_dl1_dev"
+	out_job_file="ctapipe_muon_run000_dev.job"
+	in_simtel_file=/home/burmist/home2/work/CTA/corsika7.7_simtelarray_2020-06-28_patch_DBscan/corsika7.7_simtelarray_2020-06-28_patch/run_simtelarray_muons/datafile/muon_run000.simtel.gz
+	out_r0_dl1_h5_file=/home/burmist/home2/work/CTA/cta-lstchain/cta-lstchain_mu_images_ana/data/run_000/dl1_muon_ctapipe_run000_dev.h5
+	rm -rf $out_r0_dl1_h5_file
+	#--max-events 100
+	config_file=./processor_tool_muon_configuration_MuonImpactpointIntensityFitter.yaml
+	ctapipe-process --overwrite --input=$in_simtel_file --output=$out_r0_dl1_h5_file --config=$config_file
     elif [ "$1" = "-c" ]; then
 	make clean; make -j	
     elif [ "$1" = "--dl1_csv" ]; then
