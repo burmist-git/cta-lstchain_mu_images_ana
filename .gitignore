@@ -173,3 +173,14 @@ out_tmp.log
 tmp_hist_reco_x_m_true_x.csv
 tmp_hist_reco_y_m_true_y.csv
 true_core_x_y.csv
+outdir_0/
+outdir_1/
+outdir_2/
+outdir_3/
+outdir_4/
+outdir_5/
+outdir_6/
+outdir_7/
+outdir_8/
+outdir_9/
+true_energy_core_x_y_intensity.csv
